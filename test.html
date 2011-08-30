@@ -29,7 +29,10 @@
 			removeAfter:      false,
 			columnMinWidth:   120,
 			columnMaxWidth:   200,
-			childIndicator:   true
+			childIndicator:   true,
+			leafMode: true,
+			onItemChecked: function (ci, ii, item) { console.log(ci, ii, item); },
+			onItemUnchecked: function (ci, ii, item) { console.log(ci, ii, item); }
 		});
 		jQuery.fn.jColumnListView({
 			id:           'cl2',

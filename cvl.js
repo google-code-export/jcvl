@@ -1125,14 +1125,16 @@ jCVL_Column.prototype.hideWaiter = function () {
  * 'pos' is optional, if not defined then item will be added to the end of list
  */
 jCVL_Column.prototype.addItem = function (item, pos) {
-	var it      = this._checkData([ item ])[0];
-	var index   = pos && pos >= 0 && pos < this.items.length ? pos : this.items.length;
+	var it    = this._checkData([ item ])[0];
+	var index = pos !== undefined && parseInt(pos) >= 0 && parseInt(pos) < this.items.length 
+		? parseInt(pos) : this.items.length;
 	this.data.splice(index, 0, it);
 	this.refresh();
 }
 
 jCVL_Column.prototype.removeItem = function (pos) {
-	var index = pos && pos >= 0 && pos < this.items.length ? pos : -1;
+	var index = pos !== undefined && parseInt(pos) >= 0 && parseInt(pos) < this.items.length 
+		? parseInt(pos) : -1;
 	if (index > -1)
 	{
 		this.data.splice(index, 1);
@@ -1142,6 +1144,16 @@ jCVL_Column.prototype.removeItem = function (pos) {
 
 jCVL_Column.prototype.refresh = function () {
 	this.setData(this.data, this.parentItem);
+}
+
+jCVL_Column.prototype.setItemData = function (index, data) {
+	var pos = index !== undefined && parseInt(index) >= 0 && parseInt(index) < this.data.length 
+		? parseInt(index) : -1;
+	if (pos > -1)
+	{
+		this.data[index].data = this._checkData(data);
+		this.refresh();
+	}
 }
 
 // -----------------------------------------------------------------------------

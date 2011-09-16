@@ -407,6 +407,7 @@ function jCVL_ColumnItem (opts)
 		textFormat:            jCVL_ColumnItemTags.childrenCounter + ' ' + jCVL_ColumnItemTags.text, // e.g. '[4] Item Text'
 		childrenCounterFormat: '[' + jCVL_ColumnItemTags.childrenNumber + ']', // e.g. '[4]'
 		emptyChildrenCounter:  true,
+		checkAndClick:         false,
 		childIndicator:           true,
 		childIndicatorTextFormat: null
 	};
@@ -543,6 +544,14 @@ jCVL_ColumnItem.prototype.doOnClick = function (ev) {
 	ev.stopPropagation();
 	this.setSelected(true);
 	this.opts.onClick(ev, this);
+
+	if (this.opts.checkAndClick)
+	{
+		this.opts.checkAndClick = false; // silly but simple
+		$(this.elems.checkbox).attr('checked', ! $(this.elems.checkbox).attr('checked'));
+		this.doOnCheckboxClick(ev);
+		this.opts.checkAndClick = true;
+	}
 };
 
 // Sets onClick handler
@@ -558,6 +567,13 @@ jCVL_ColumnItem.prototype.fireOnCheckboxClick = function () {
 jCVL_ColumnItem.prototype.doOnCheckboxClick = function (ev) {
 	this.opts.checked = this.elems.checkbox.is(':checked');
 	this.opts.onCBClick(ev, this);
+
+	if (this.opts.checkAndClick)
+	{
+		this.opts.checkAndClick = false; // silly but simple
+		this.doOnClick(ev);
+		this.opts.checkAndClick = true;
+	}
 }
 
 // Returns parent column object
@@ -674,6 +690,14 @@ jCVL_ColumnItem.prototype.updateItem = function () {
 	this.setText(this.getText()); // Re-render text
 }
 
+jCVL_ColumnItem.prototype.setCheckAndClick = function (ch) {
+	this.opts.checkAndClick = !!ch;
+}
+
+jCVL_ColumnItem.prototype.getCheckAndClick = function () {
+	return this.opts.checkAndClick;
+}
+
 
 // -----------------------------------------------------------------------------
 // Column Waiter
@@ -742,6 +766,7 @@ function jCVL_Column(opts)
 		onClick:         emptyHandler,
 		onCheckboxClick: emptyHandler,
 		onColumnClick:   emptyHandler,
+		checkAndClick:            false,
 		textFormat:               jCVL_ColumnItemTags.text,
 		childrenCounterFormat:    null,
 		emptyChildrenCounter:     false,
@@ -804,6 +829,7 @@ jCVL_Column.prototype._createItem = function (index, text, value) {
 		index:         index,
 		parentCol:     this, 
 		childrenNum:   this.data[index].data.length,
+		checkAndClick: this.opts.checkAndClick,
 		textFormat:               this.opts.textFormat,
 		childrenCounterFormat:    this.opts.childrenCounterFormat,
 		emptyChildrenCounter:     this.opts.emptyChildrenCounter,
@@ -1294,6 +1320,7 @@ function jCVL_ColumnList (opts)
 		data:             [],
 		useSplitters:     true,
 		splitterLeftMode: false,
+		checkAndClick:    false,
 		onClick:          function () {},
 		onCheckboxClick:  function () {},
 		onItemChecked:    function () {}, // Passed up to client callbacks
@@ -1356,6 +1383,7 @@ jCVL_ColumnList.prototype._createColumns = function () {
 			maxWidth:  this.opts.columnMaxWidth,
 			id:        colId,
 			index:     i,
+			checkAndClick: this.opts.checkAndClick,
 			// Bind current i value to colIndex 
 			onClick:  (function (colIndex) { return function (ev, index, item) { 
 				that.onColumnItemClick(ev, colIndex, index, item); }; })(i),
@@ -1703,6 +1731,7 @@ function jCVL_ColumnListView(opts)
 		removeULAfter:    false,
 		showLabels:       true,
 		leafMode:         false,
+		checkAndClick:    false,
 		textFormat:               jCVL_ColumnItemTags.text,
 		childrenCounterFormat:    null,
 		emptyChildrenCounter:     false,
@@ -2060,6 +2089,7 @@ jQuery.fn.jColumnListView = function (options) {
 		showLabels:       true,
 		singleCheck:      false,
 		leafMode:         false,
+		checkAndClick:    false,
 		textFormat:            jCVL_ColumnItemTags.text,
 		childrenCounterFormat: null,
 		emptyChildrenCounter:  false,

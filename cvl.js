@@ -1128,7 +1128,7 @@ jCVL_Column.prototype.addItem = function (item, pos) {
 	var it      = this._checkData([ item ])[0];
 	var index   = pos && pos >= 0 && pos < this.items.length ? pos : this.items.length;
 	this.data.splice(index, 0, it);
-	this.setData(this.data);
+	this.refresh();
 }
 
 jCVL_Column.prototype.removeItem = function (pos) {
@@ -1136,8 +1136,12 @@ jCVL_Column.prototype.removeItem = function (pos) {
 	if (index > -1)
 	{
 		this.data.splice(index, 1);
-		this.setData(this.data);
+		this.refresh();
 	}
+}
+
+jCVL_Column.prototype.refresh = function () {
+	this.setData(this.data, this.parentItem);
 }
 
 // -----------------------------------------------------------------------------

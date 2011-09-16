@@ -1121,6 +1121,25 @@ jCVL_Column.prototype.hideWaiter = function () {
 	this.waiter.hide();
 }
 
+/* Add new item to the list. Item is a hash { 'name': 'Name' ... }
+ * 'pos' is optional, if not defined then item will be added to the end of list
+ */
+jCVL_Column.prototype.addItem = function (item, pos) {
+	var it      = this._checkData([ item ])[0];
+	var index   = pos && pos >= 0 && pos < this.items.length ? pos : this.items.length;
+	this.data.splice(index, 0, it);
+	this.setData(this.data);
+}
+
+jCVL_Column.prototype.removeItem = function (pos) {
+	var index = pos && pos >= 0 && pos < this.items.length ? pos : -1;
+	if (index > -1)
+	{
+		this.data.splice(index, 1);
+		this.setData(this.data);
+	}
+}
+
 // -----------------------------------------------------------------------------
 // ColumnSplitter
 //

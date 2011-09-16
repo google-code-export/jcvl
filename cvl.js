@@ -841,9 +841,22 @@ jCVL_Column.prototype._fillItems = function (data) {
 	});
 }
 
+jCVL_Column.prototype._checkData = function (data) {
+	var that = this;
+	jQuery.each(data, function (index, d) {
+		if (!d.data)
+			d.data = [];
+		d.hasChildren = d.data.length != 0;
+		if (!d.value)
+			d.value = d.name;
+		d.data = that._checkData(d.data);
+	});
+	return data;
+}
+
 // Sets new data for column
 jCVL_Column.prototype.setData = function (data, parentItem) {
-	this.data        = data;
+	this.data        = this._checkData(data);
 	this.parentItem  = (parentItem) ? parentItem : undefined;
 	this.parentText  = (parentItem) ? parentItem.getText() : undefined;
 	this.parentValue = (parentItem) ? parentItem.getValue() : undefined;
@@ -1529,7 +1542,7 @@ jCVL_ColumnList.prototype.fireColumnItemClick = function (colIndex, itemIndex)
 // Sets/Gets data
 jCVL_ColumnList.prototype.setData = function (data) {
 	this.clear();
-	this.data = data;
+	this.data = this.cols[0]._checkData(data);
 	this.cols[0].setData(this.data);
 }
 

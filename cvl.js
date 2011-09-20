@@ -707,6 +707,14 @@ jCVL_ColumnItem.prototype.getCheckAndClick = function () {
 	return this.opts.checkAndClick;
 }
 
+jCVL_ColumnItem.prototype.getIndexPath = function () {
+	var p = [];
+	var it = this;
+	do { p.push(it.getIndex()); } while (it = it.getParentColumn().getParentItem());
+	return p.reverse();
+}
+
+
 
 // -----------------------------------------------------------------------------
 // Column Waiter
@@ -965,7 +973,7 @@ jCVL_Column.prototype.getFullPath = function (index, toLevel_CurrentIndex, toLev
 		while (p && (curLevel == -1 || --curLevel >= toLevel))
 		{
 			var pCol = p.getParentColumn();
-			str.push({ text: p.getText(), value: p.getValue(), hasChildren: pCol.itemHasChildren(pCol.getItemIndex(p.getValue())) });
+			str.push({ text: p.getText(), value: p.getValue(), hasChildren: pCol.itemHasChildren(p.getIndex()) });
 			p = pCol.getParentItem();
 		}
 	}
@@ -987,13 +995,8 @@ jCVL_Column.prototype.getItem = function (index) {
 	return (index >= 0 && index < this.items.length) ? this.items[index] : undefined;
 }
 
-// Returns index of item by value
-jCVL_Column.prototype.getItemIndex = function (value) {
-	var index = null;
-	for (var i=0; i<this.items.length && index == null; i++)
-		if (this.items[i].getValue() == value)
-			index = i;
-	return index;
+jCVL_Column.prototype.getItemCount = function () {
+	return this.items.length;
 }
 
 // Returns item data
@@ -1350,7 +1353,7 @@ jCVL_ColumnSplitter.prototype.onMouseUpOut = function (ev) {
 // -----------------------------------------------------------------------------
 // ColumnList
 //
-function jCVL_ColumnList (opts)
+function jCVL_ColumnList (opts, pview)
 {
 	var defOpts = {
 		height:           200,
@@ -1374,10 +1377,11 @@ function jCVL_ColumnList (opts)
 		childIndicator:           true,
 		childIndicatorTextFormat: null
 	};
-	this.opts = jQuery.extend(defOpts, opts);
-	this.cols = [];
-	this.spls = [];
-	this.data = this.opts.data;
+	this.opts  = jQuery.extend(defOpts, opts);
+	this.cols  = [];
+	this.spls  = [];
+	this.data  = this.opts.data;
+	this.pView = pview; // parent View
 	
 	this.wrapper = $('<div>')
 		.attr('id', this.opts.id + '-wrapper')
@@ -1548,9 +1552,9 @@ jCVL_ColumnList.prototype.onColumnItemClick = function (ev, colIndex, itemIndex,
 			}
 		});
 		
-		if (this.cols[colIndex].itemHasChildren(itemIndex))
+		var nextCol = colIndex + 1 < this.cols.length ? this.cols[colIndex + 1] : null;
+		if (nextCol && (this.opts.ajaxSource.itemUrl || this.cols[colIndex].itemHasChildren(itemIndex)))
 		{
-			var nextCol = this.cols[colIndex + 1];
 			nextCol.clear();
 			// Adjust width of wrapper
 			var newWidth = this._calculateWidth() + nextCol.getFullWidth();
@@ -1558,24 +1562,55 @@ jCVL_ColumnList.prototype.onColumnItemClick = function (ev, colIndex, itemIndex,
 				newWidth += this.spls[colIndex + 1].getFullWidth();
 			this._updateWidth(newWidth);
 
-			var showFn = function () {
-				nextCol.show(function () {
-					nextCol.setData(that.cols[colIndex].getItemData(itemIndex));
-					nextCol.setParentItem(item);
-					that.opts.onClick(ev, colIndex, itemIndex, item);
-
-					if (that.wrapper.width() < that._calculateWidth())
-						that.wrapper.animate({ scrollLeft: that._calculateWidth() - that.wrapper.width() }, 'fast');
-				});
+			var setDataFn = function (d) {
+				nextCol.setData(nextCol._checkData(d), item);
+				that.opts.onClick(ev, colIndex, itemIndex, item);
 			};
+			
+			nextCol.show(function () {
+				if (that.opts.ajaxSource.itemUrl)
+				{
+					nextCol.showWaiter();
 
-			if (this.opts.ajaxSource.itemUrl)
-			{
-				// TODO Restore _buildItemURL() and place ajax request here
-			}
-			else
-				showFn();
-						
+					var url = that._buildItemURL(item.getIndexPath(), item.getText(), item.getValue());
+					var ao  = that.opts.ajaxSource;
+					$.ajax({
+						type:      ao.method || 'get',
+						url:       url,
+						dataType:  ao.dataType,
+						success:   function (respData, respStatus, reqObj) {
+							nextCol.hideWaiter();
+							var data;
+							try
+							{
+								data = jQuery.parseJSON(reqObj.responseText);
+							}
+							catch (e)
+							{
+								data = that.pView._parseData(that.pView._checkULElement(respData));
+							}
+							setDataFn(data);
+							if (!nextCol.getItemCount())
+							{
+								nextCol.hide();
+								if (that.opts.useSplitters)
+									that.spls[colIndex + 1].hide();
+							}
+							ao.onSuccess(reqObj, respStatus, respData);
+						},
+						error:     function (reqObj, respStatis, respData) {
+							nextCol.hideWaiter();
+							ao.onFailure(reqObj, respStatus, errObj);
+						}
+					});
+				}
+				else
+					setDataFn(that.cols[colIndex].getItemData(itemIndex));
+
+				if (that.wrapper.width() < that._calculateWidth())
+					that.wrapper.animate({ scrollLeft: that._calculateWidth() - that.wrapper.width() }, 'fast');
+			});
+				
 			if (this.opts.useSplitters)
 				this.spls[colIndex + 1].show();
 			bEx = false;
@@ -1763,6 +1798,18 @@ jCVL_ColumnList.prototype.getSelectedItems = function (bOnlyLeafs) {
 	});
 }
 
+jCVL_ColumnList.prototype._buildItemURL = function (path_arr, name, value) {
+	var url = this.opts.ajaxSource.itemUrl;
+	if (url)
+	{
+		var p = path_arr.join(this.opts.ajaxSource.pathSeparator);
+		url = url.replace(jCVL_ColumnItemTags.urlItemPath,  encodeURIComponent(p));
+		url = url.replace(jCVL_ColumnItemTags.urlItemName,  encodeURIComponent(name || ''));
+		url = url.replace(jCVL_ColumnItemTags.urlItemValue, encodeURIComponent(value || ''));
+	}
+	return url;
+}
+
 // -----------------------------------------------------------------------------
 // Column List View
 //
@@ -1814,7 +1861,7 @@ function jCVL_ColumnListView(opts)
 	listOpts.onClick         = function (ev, ci, ii, it) { that.onColumnItemClick(ev, ci, ii, it); };
 	listOpts.onCheckboxClick = function (ev, ci, ii, it) { that.onColumnItemCheckboxClick(ev, ci, ii, it); };
 	listOpts.height          = this.opts.columnHeight;
-	this.list = new jCVL_ColumnList(listOpts);
+	this.list = new jCVL_ColumnList(listOpts, this);
 	
 	this.jaws = new jCVL_LabelArea({
 		id:             this.opts.id + '-labels-area',
@@ -1905,7 +1952,7 @@ jCVL_ColumnListView.prototype.setFromURL = function (in_url, col_num) {
 			dataType:  ao.dataType,
 			success:   function (respData, respStatus, reqObj) {
 				that.list.getColumn(cnum).hideWaiter();
-				that.setFromElement($(respData).children('ul'), false, cnum);
+				that.setFromElement($(respData), false, cnum);
 				// setFromElement() can throw errors so no success callback will be called.
 				ao.onSuccess(reqObj, respStatus, respData);
 			},

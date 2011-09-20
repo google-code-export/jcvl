@@ -56,6 +56,9 @@
  *   onItemChecked    - callback called when item has been checked
  *   onItemUnchecked  - callback called when item has been unchecked
  *
+ * Parameters v0.5.3
+ *   ajaxSource/itemUrl      - URL to retrieve data when item was clicked
+ *
  * Usage example:
  * 
  *      jQuery.fn.jColumnListView({
@@ -95,6 +98,9 @@
  *              onSuccess:   function (reqObj, respStatus, respData) {},
  *              onFailure:   function (reqObj, respStatus, errObj) {},
  *              waiterClass: 'cvl-column-waiter'
+ * // Since version 0.5.3
+ *              itemUrl:       null
+ *              pathSeparator: ','
  *          }
  * // Since version 0.5.2
  *          onItemChecked:   function (item) {},
@@ -387,7 +393,10 @@ jCVL_LabelArea.prototype.clear = function () {
 var jCVL_ColumnItemTags = {
 	'text':             '%cvl-text%',
 	'childrenCounter':  '%cvl-children-counter%',
-	'childrenNumber':   '%cvl-count%'
+	'childrenNumber':   '%cvl-count%',
+	'urlItemPath':      '%cvl-url-item-path%',
+	'urlItemName':      '%cvl-url-item-name%',
+	'urlItemValue':     '%cvl-url-item-value%'
 };
 
 function jCVL_ColumnItem (opts)
@@ -771,8 +780,7 @@ function jCVL_Column(opts)
 		childrenCounterFormat:    null,
 		emptyChildrenCounter:     false,
 		childIndicator:           true,
-		childIndicatorTextFormat: null,
-		waiterClassName:          'cvl-column-waiter'
+		childIndicatorTextFormat: null
 	};
 	this.opts            = jQuery.extend(defOpts, opts);
 	this.opts.width      = CVL_AdjustMinMax(this.opts.width, this.opts.minWidth, this.opts.maxWidth);
@@ -790,7 +798,7 @@ function jCVL_Column(opts)
 	this.onCheckboxClick = this.opts.onCheckboxClick;
 	this.onColumnClick   = this.opts.onColumnClick;
 	this.simpleMode      = false;
-	this.waiter          = new jCVL_ColumnWaiter({ className: this.opts.waiterClassName });
+	this.waiter          = new jCVL_ColumnWaiter({ className: this.opts.ajaxSource.waiterClassName });
 	
 	this.elem = $('<div>')
 		.attr('id', this.id)
@@ -1364,8 +1372,7 @@ function jCVL_ColumnList (opts)
 		childrenCounterFormat:    null,
 		emptyChildrenCounter:     false,
 		childIndicator:           true,
-		childIndicatorTextFormat: null,
-		waiterClassName:          'cvl-column-waiter'
+		childIndicatorTextFormat: null
 	};
 	this.opts = jQuery.extend(defOpts, opts);
 	this.cols = [];
@@ -1431,7 +1438,7 @@ jCVL_ColumnList.prototype._createColumns = function () {
 			emptyChildrenCounter:     this.opts.emptyChildrenCounter,
 			childIndicator:           this.opts.childIndicator,
 			childIndicatorTextFormat: this.opts.childIndicatorTextFormat,
-			waiterClassName:          this.opts.waiterClassName
+			ajaxSource:               this.opts.ajaxSource
 		});
 		col.setSimpleMode(true);
 		col.appendTo(this.elem);
@@ -1551,14 +1558,24 @@ jCVL_ColumnList.prototype.onColumnItemClick = function (ev, colIndex, itemIndex,
 				newWidth += this.spls[colIndex + 1].getFullWidth();
 			this._updateWidth(newWidth);
 
-			nextCol.show(function () {
-				nextCol.setData(that.cols[colIndex].getItemData(itemIndex));
-				nextCol.setParentItem(item);
-				that.opts.onClick(ev, colIndex, itemIndex, item);
-				
-				if (that.wrapper.width() < that._calculateWidth())
-					that.wrapper.animate({ scrollLeft: that._calculateWidth() - that.wrapper.width() }, 'fast');
-			});
+			var showFn = function () {
+				nextCol.show(function () {
+					nextCol.setData(that.cols[colIndex].getItemData(itemIndex));
+					nextCol.setParentItem(item);
+					that.opts.onClick(ev, colIndex, itemIndex, item);
+
+					if (that.wrapper.width() < that._calculateWidth())
+						that.wrapper.animate({ scrollLeft: that._calculateWidth() - that.wrapper.width() }, 'fast');
+				});
+			};
+
+			if (this.opts.ajaxSource.itemUrl)
+			{
+				// TODO Restore _buildItemURL() and place ajax request here
+			}
+			else
+				showFn();
+						
 			if (this.opts.useSplitters)
 				this.spls[colIndex + 1].show();
 			bEx = false;
@@ -1773,12 +1790,14 @@ function jCVL_ColumnListView(opts)
 		childIndicator:           true,
 		childIndicatorTextFormat: null,
 		ajaxSource: {
-			url:         null,
-			method:      'get',
-			dataType:    'html xml',
-			onSuccess:   function (reqObj, respStatus, respData) {},
-			onFailure:   function (reqObj, respStatus, errObj) {},
-			waiterClass: 'cvl-column-waiter'
+			url:           null,
+			itemUrl:       null,
+			pathSeparator: ',',
+			method:        'get',
+			dataType:      'html xml',
+			onSuccess:     function (reqObj, respStatus, respData) {},
+			onFailure:     function (reqObj, respStatus, errObj) {},
+			waiterClass:   'cvl-column-waiter'
 		},
 		onItemChecked:   function (item) {},
 		onItemUnchecked: function (item) {}
@@ -1795,7 +1814,6 @@ function jCVL_ColumnListView(opts)
 	listOpts.onClick         = function (ev, ci, ii, it) { that.onColumnItemClick(ev, ci, ii, it); };
 	listOpts.onCheckboxClick = function (ev, ci, ii, it) { that.onColumnItemCheckboxClick(ev, ci, ii, it); };
 	listOpts.height          = this.opts.columnHeight;
-	listOpts.waiterClassName = this.opts.ajaxSource.waiterClass;
 	this.list = new jCVL_ColumnList(listOpts);
 	
 	this.jaws = new jCVL_LabelArea({
@@ -1854,38 +1872,45 @@ jCVL_ColumnListView.prototype.setSingleCheck = function (bMode) {
 }
 
 // Set up list view from data list stored in <UL> on page
-jCVL_ColumnListView.prototype.setFromElement = function (elem_id, bRemoveListAfter) {
+jCVL_ColumnListView.prototype.setFromElement = function (elem_id, bRemoveListAfter, columnNum) {
 	var ul = this._checkULElement(elem_id);
-	this._clear();
+	var cnum = arguments.length > 1 && parseInt(columnNum) >=0 && parseInt(columnNum) < this.opts.columnNum
+		? parseInt(columnNum) : 0;
+	if (cnum == 0)
+		this._clear();
 	var data = this._parseData(ul);
-	this.list.setData(data);
+	this.list.getColumn(cnum).setData(data);
 	if (!!bRemoveListAfter)
 		ul.remove();
 }
 
 // Set up list view from data retrieved from URL
 // 0.5.0 Note: Now only HTML response supported
-jCVL_ColumnListView.prototype.setFromURL = function (in_url) {
-	this._clear();
-	this.list.getColumn(0).showWaiter();
+jCVL_ColumnListView.prototype.setFromURL = function (in_url, col_num) {
+	var cnum = arguments.length > 1 && parseInt(col_num) >=0 && parseInt(col_num) < this.opts.columnNum
+		? parseInt(col_num) : 0;
 	var that = this;
 	var ao   = this.opts.ajaxSource;
 	var url  = in_url || ao.url || null;
 	
 	if (url)
 	{
+		if (cnum == 0)
+			this._clear();
+		this.list.getColumn(cnum).showWaiter();
+
 		$.ajax({
 			type:      ao.method || 'get',
 			url:       url,
 			dataType:  ao.dataType,
 			success:   function (respData, respStatus, reqObj) {
-				that.list.getColumn(0).hideWaiter();
-				that.setFromElement($(respData).children('ul'));
+				that.list.getColumn(cnum).hideWaiter();
+				that.setFromElement($(respData).children('ul'), false, cnum);
 				// setFromElement() can throw errors so no success callback will be called.
 				ao.onSuccess(reqObj, respStatus, respData);
 			},
 			error:     function (reqObj, respStatus, errObj) {
-				that.list.getColumn(0).hideWaiter();
+				that.list.getColumn(cnum).hideWaiter();
 				ao.onFailure(reqObj, respStatus, errObj);
 			}
 		});
@@ -2073,7 +2098,7 @@ jCVL_ColumnListView.prototype.onLabelNameClick = function (event, id, text, valu
 }
 
 // Sets given items checked (by value!)
-jCVL_ColumnListView.prototype.setValues = function (vals) {
+jCVL_ColumnListView.prototype.setItemsChecked = function (vals) {
 	var that = this;
 	var data = this.list.getData();
 	jQuery.each(vals, function (index, val) {
@@ -2087,6 +2112,11 @@ jCVL_ColumnListView.prototype.setValues = function (vals) {
 				that.list.onColumnItemCheckboxClick(null, col, itm, item);
 			});
 	});
+}
+
+// v0.5.3 back compatibility (till 0.6.0)
+jCVL_ColumnListView.prototype.setValues = function (vals) {
+	this.setItemsChecked(vals);
 }
 
 jCVL_ColumnListView.prototype.uncheckAll = function () {
@@ -2131,12 +2161,14 @@ jQuery.fn.jColumnListView = function (options) {
 		childIndicator:           true,
 		childIndicatorTextFormat: null,
 		ajaxSource: {
-			url:         null,
-			method:      'get',
-			dataType:    'html xml',
-			onSuccess:   function (reqObj, respStatus, respData) {},
-			onFailure:   function (reqObj, respStatus, errObj) {},
-			waiterClass: 'cvl-column-waiter'
+			url:           null,
+			itemUrl:       null,
+			pathSeparator: ',',
+			method:        'get',
+			dataType:      'html xml', // parked till XMLHttpRequest2, TODO: update to jQuery >= 1.6
+			onSuccess:     function (reqObj, respStatus, respData) {},
+			onFailure:     function (reqObj, respStatus, errObj) {},
+			waiterClass:   'cvl-column-waiter'
 		},
 		onItemChecked:      function (item) {},
 		onItemUnchecked:    function (item) {}

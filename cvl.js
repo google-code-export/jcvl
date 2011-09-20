@@ -57,7 +57,8 @@
  *   onItemUnchecked  - callback called when item has been unchecked
  *
  * Parameters v0.5.3
- *   ajaxSource/itemUrl      - URL to retrieve data when item was clicked
+ *   ajaxSource/itemUrl       - URL to retrieve data when item was clicked
+ *   ajaxSource/pathSeparator - separator to join item path indexes to string
  *
  * Usage example:
  * 
@@ -108,9 +109,9 @@
  *		});
  *
  * Author:   Alexander Khizha <khizhaster@gmail.com>
- * Version:  0.5.1
+ * Version:  0.5.3
  * Started:  25.03.2011
- * Modified: 08.08.2011
+ * Modified: 21.09.2011
  * License:  BSD
  */
 

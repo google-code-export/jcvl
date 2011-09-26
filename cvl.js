@@ -1922,14 +1922,19 @@ jCVL_ColumnListView.prototype.setSingleCheck = function (bMode) {
 // Set up list view from data list stored in <UL> on page
 jCVL_ColumnListView.prototype.setFromElement = function (elem_id, bRemoveListAfter, columnNum) {
 	var ul = this._checkULElement(elem_id);
+	var data = this._parseData(ul);
+	this.setFromData(data, columnNum);
+	if (!!bRemoveListAfter)
+		ul.remove();
+}
+
+// Set up view frmo json data
+jCVL_ColumnListView.prototype.setFromData = function (data, columnNum) {
 	var cnum = arguments.length > 1 && parseInt(columnNum) >=0 && parseInt(columnNum) < this.opts.columnNum
 		? parseInt(columnNum) : 0;
 	if (cnum == 0)
 		this._clear();
-	var data = this._parseData(ul);
 	this.list.getColumn(cnum).setData(data);
-	if (!!bRemoveListAfter)
-		ul.remove();
 }
 
 // Set up list view from data retrieved from URL
@@ -1953,8 +1958,13 @@ jCVL_ColumnListView.prototype.setFromURL = function (in_url, col_num) {
 			dataType:  ao.dataType,
 			success:   function (respData, respStatus, reqObj) {
 				that.list.getColumn(cnum).hideWaiter();
-				that.setFromElement($(respData), false, cnum);
-				// setFromElement() can throw errors so no success callback will be called.
+				var data;
+				try {
+					data = jQuery.parseJSON(reqObj.responseText);
+				} catch (e) {
+					data = this._parseData(this._checkULElement(respData));
+				}
+				that.setFromData(data, cnum);
 				ao.onSuccess(reqObj, respStatus, respData);
 			},
 			error:     function (reqObj, respStatus, errObj) {

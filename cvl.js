@@ -445,7 +445,7 @@ function jCVL_ColumnItem (opts)
 		.click(function(ev) { that.doOnCheckboxClick(ev); });
 	var labelElem = $('<span>')
 		.attr('class', this.cl.Label)
-		.append($('<span>').text(this._renderText()))
+		.append($('<span>').html(this._renderText()))
 		.click(function (ev) { that.doOnClick(ev); });
 	var inElem = $('<div>')
 		.attr('class', this.cl.Indicator);
@@ -454,7 +454,7 @@ function jCVL_ColumnItem (opts)
 	labelElem.append(inElem);
 	elem.append(cbBoxElem).append(labelElem);
 	
-	inElem.text(this._renderIndicator());
+	inElem.html(this._renderIndicator());
 	if (!this.opts.childIndicator || !this.hasChildren())
 		inElem.hide();
 
@@ -499,7 +499,7 @@ jCVL_ColumnItem.prototype.getValue = function () {
 // Sets text label of item
 jCVL_ColumnItem.prototype.setText = function (text) {
 	this.opts.text = text;
-	this.elems.label.children('span').text(this._renderText());
+	this.elems.label.children('span').html(this._renderText());
 }
 
 // Sets element value
@@ -1992,14 +1992,18 @@ jCVL_ColumnListView.prototype._parseData = function (ul_elem, data) {
 	if (!data)
 		data = [];
 
+	ul_elem = $(ul_elem).clone();
 	var that = this;
 	$(ul_elem).children('li').each(function (index, item) {
-		var name  = $.trim($($(item).contents()[0]).text());
-		var value = $(item).attr('itemValue') || name;
 		var childrenData = [];
-		var ulChild = $(item).children('ul');
-		if (ulChild.length)
-			that._parseData(ulChild[0], childrenData);
+		var ulChildren = $(item).children('ul').detach();
+		jQuery.each(ulChildren, function (index, item) {
+			that._parseData(item, childrenData);
+		});
+
+		var text_item = $($(item).contents()[0]).text();
+		var name  = ulChildren.length ? text_item : item.innerHTML; //$.trim($($(item).contents()[0]).text());
+		var value = $(item).attr('itemValue') || text_item; //name;
 
 		data.push({ name: name, value: value, data: childrenData, hasChildren: childrenData.length != 0 });
 	});

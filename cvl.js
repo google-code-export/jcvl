@@ -159,7 +159,7 @@ function jCVL_Label (opts)
 		.click(function (ev) { that.doOnDelClick(ev); });
 	var nameElem = $('<span>')
 		.attr('class', clName)
-		.text(this.text)
+		.html(this.text)
 		.click(function (ev) { that.doOnNameClick(ev); });
 	var valElem = $('<input type="hidden">')
 		.attr('name',  this.paramName)
@@ -173,7 +173,7 @@ function jCVL_Label (opts)
 jCVL_Label.prototype.setText = function (text, value) {
 	this.text  = text;
 	this.value = value || this.text;
-	this.elems.nameElem.text(this.text);
+	this.elems.nameElem.html(this.text);
 	this.elems.valElem.attr('value', this.value);
 }
 

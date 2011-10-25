@@ -60,6 +60,7 @@
  *   ajaxSource/itemUrl       - URL to retrieve data when item was clicked
  *   ajaxSource/pathSeparator - separator to join item path indexes to string
  *
+ *
  * Usage example:
  * 
  *      jQuery.fn.jColumnListView({
@@ -109,9 +110,9 @@
  *		});
  *
  * Author:   Alexander Khizha <khizhaster@gmail.com>
- * Version:  0.5.3
+ * Version:  0.5.4
  * Started:  25.03.2011
- * Modified: 21.09.2011
+ * Modified: 25.10.2011
  * License:  BSD
  */
 

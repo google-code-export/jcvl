@@ -31,8 +31,8 @@
 			columnMaxWidth:   200,
 			childIndicator:   true,
 			leafMode: true,
-			onItemChecked: function (ci, ii, item) { console.log(ci, ii, item); },
-			onItemUnchecked: function (ci, ii, item) { console.log(ci, ii, item); }
+			onItemChecked: function (ci) { console.log(ci); },
+			onItemUnchecked: function (ci) { console.log(ci); }
 		});
 		jQuery.fn.jColumnListView({
 			id:           'cl2',

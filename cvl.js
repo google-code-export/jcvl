@@ -110,9 +110,9 @@
  *		});
  *
  * Author:   Alexander Khizha <khizhaster@gmail.com>
- * Version:  0.5.4
+ * Version:  0.5.5
  * Started:  25.03.2011
- * Modified: 25.10.2011
+ * Modified: 12.12.2011
  * License:  BSD
  */
 
@@ -1657,10 +1657,13 @@ jCVL_ColumnList.prototype.fireColumnItemClick = function (colIndex, itemIndex)
 }
 
 // Sets/Gets data
-jCVL_ColumnList.prototype.setData = function (data) {
-	this.clear();
-	this.data = this.cols[0]._checkData(data);
-	this.cols[0].setData(this.data);
+jCVL_ColumnList.prototype.setData = function (data, columnNum) {
+	var cnum = arguments.length > 1 && parseInt(columnNum) >=0 && parseInt(columnNum) < this.opts.columnNum
+		? parseInt(columnNum) : 0;
+	if (cnum == 0)
+		this.clear();
+	this.data = this.cols[cnum]._checkData(data);
+	this.cols[cnum].setData(this.data);
 }
 
 jCVL_ColumnList.prototype.getData = function () {
@@ -1935,7 +1938,8 @@ jCVL_ColumnListView.prototype.setFromData = function (data, columnNum) {
 		? parseInt(columnNum) : 0;
 	if (cnum == 0)
 		this._clear();
-	this.list.getColumn(cnum).setData(data);
+
+	this.list.setData(data, cnum);
 }
 
 // Set up list view from data retrieved from URL

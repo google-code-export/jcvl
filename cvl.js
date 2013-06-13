@@ -60,6 +60,7 @@
  *   ajaxSource/itemUrl       - URL to retrieve data when item was clicked
  *   ajaxSource/pathSeparator - separator to join item path indexes to string
  *
+ *
  * Usage example:
  * 
  *      jQuery.fn.jColumnListView({
@@ -109,9 +110,9 @@
  *		});
  *
  * Author:   Alexander Khizha <khizhaster@gmail.com>
- * Version:  0.5.3
+ * Version:  0.5.5
  * Started:  25.03.2011
- * Modified: 21.09.2011
+ * Modified: 12.12.2011
  * License:  BSD
  */
 
@@ -158,7 +159,7 @@ function jCVL_Label (opts)
 		.click(function (ev) { that.doOnDelClick(ev); });
 	var nameElem = $('<span>')
 		.attr('class', clName)
-		.text(this.text)
+		.html(this.text)
 		.click(function (ev) { that.doOnNameClick(ev); });
 	var valElem = $('<input type="hidden">')
 		.attr('name',  this.paramName)
@@ -172,7 +173,7 @@ function jCVL_Label (opts)
 jCVL_Label.prototype.setText = function (text, value) {
 	this.text  = text;
 	this.value = value || this.text;
-	this.elems.nameElem.text(this.text);
+	this.elems.nameElem.html(this.text);
 	this.elems.valElem.attr('value', this.value);
 }
 
@@ -445,7 +446,7 @@ function jCVL_ColumnItem (opts)
 		.click(function(ev) { that.doOnCheckboxClick(ev); });
 	var labelElem = $('<span>')
 		.attr('class', this.cl.Label)
-		.append($('<span>').text(this._renderText()))
+		.append($('<span>').html(this._renderText()))
 		.click(function (ev) { that.doOnClick(ev); });
 	var inElem = $('<div>')
 		.attr('class', this.cl.Indicator);
@@ -454,7 +455,7 @@ function jCVL_ColumnItem (opts)
 	labelElem.append(inElem);
 	elem.append(cbBoxElem).append(labelElem);
 	
-	inElem.text(this._renderIndicator());
+	inElem.html(this._renderIndicator());
 	if (!this.opts.childIndicator || !this.hasChildren())
 		inElem.hide();
 
@@ -499,7 +500,7 @@ jCVL_ColumnItem.prototype.getValue = function () {
 // Sets text label of item
 jCVL_ColumnItem.prototype.setText = function (text) {
 	this.opts.text = text;
-	this.elems.label.children('span').text(this._renderText());
+	this.elems.label.children('span').html(this._renderText());
 }
 
 // Sets element value
@@ -1656,10 +1657,13 @@ jCVL_ColumnList.prototype.fireColumnItemClick = function (colIndex, itemIndex)
 }
 
 // Sets/Gets data
-jCVL_ColumnList.prototype.setData = function (data) {
-	this.clear();
-	this.data = this.cols[0]._checkData(data);
-	this.cols[0].setData(this.data);
+jCVL_ColumnList.prototype.setData = function (data, columnNum) {
+	var cnum = arguments.length > 1 && parseInt(columnNum) >=0 && parseInt(columnNum) < this.opts.columnNum
+		? parseInt(columnNum) : 0;
+	if (cnum == 0)
+		this.clear();
+	this.data = this.cols[cnum]._checkData(data);
+	this.cols[cnum].setData(this.data);
 }
 
 jCVL_ColumnList.prototype.getData = function () {
@@ -1935,7 +1939,8 @@ jCVL_ColumnListView.prototype.setFromData = function (data, columnNum) {
 		? parseInt(columnNum) : 0;
 	if (cnum == 0)
 		this._clear();
-	this.list.getColumn(cnum).setData(data);
+
+	this.list.setData(data, cnum);
 }
 
 // Set up list view from data retrieved from URL
@@ -1993,14 +1998,18 @@ jCVL_ColumnListView.prototype._parseData = function (ul_elem, data) {
 	if (!data)
 		data = [];
 
+	ul_elem = $(ul_elem).clone();
 	var that = this;
 	$(ul_elem).children('li').each(function (index, item) {
-		var name  = $.trim($($(item).contents()[0]).text());
-		var value = $(item).attr('itemValue') || name;
 		var childrenData = [];
-		var ulChild = $(item).children('ul');
-		if (ulChild.length)
-			that._parseData(ulChild[0], childrenData);
+		var ulChildren = $(item).children('ul').detach();
+		jQuery.each(ulChildren, function (index, item) {
+			that._parseData(item, childrenData);
+		});
+
+		var text_item = $($(item).contents()[0]).text();
+		var name  = ulChildren.length ? text_item : item.innerHTML; //$.trim($($(item).contents()[0]).text());
+		var value = $(item).attr('itemValue') || text_item; //name;
 
 		data.push({ name: name, value: value, data: childrenData, hasChildren: childrenData.length != 0 });
 	});

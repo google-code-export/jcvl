@@ -60,6 +60,9 @@
  *   ajaxSource/itemUrl       - URL to retrieve data when item was clicked
  *   ajaxSource/pathSeparator - separator to join item path indexes to string
  *
+ * Parameters v0.5.3
+ *   checkAllChildren  - when true checks all children of current checked item
+ *
  *
  * Usage example:
  * 
@@ -106,13 +109,15 @@
  *          }
  * // Since version 0.5.2
  *          onItemChecked:   function (item) {},
- *          onItemUnchecked: function (item) {}
+ *          onItemUnchecked: function (item) {},
+ * // Since version 0.5.6
+ *          checkAllChildren: false
  *		});
  *
  * Author:   Alexander Khizha <khizhaster@gmail.com>
- * Version:  0.5.5
+ * Version:  0.5.6
  * Started:  25.03.2011
- * Modified: 12.12.2011
+ * Modified: 13.06.2013
  * License:  BSD
  */
 
@@ -1841,7 +1846,7 @@ function jCVL_ColumnListView(opts)
 		emptyChildrenCounter:     false,
 		childIndicator:           true,
 		childIndicatorTextFormat: null,
-		selectAllChildren:        false,
+		checkAllChildren:        false,
 		ajaxSource: {
 			url:           null,
 			itemUrl:       null,
@@ -2083,7 +2088,7 @@ jCVL_ColumnListView.prototype.onColumnItemCheckboxClick = function (event, colIn
 				that.labels[item.value]++;
 		});
 
-		if (this.opts.selectAllChildren)
+		if (this.opts.checkAllChildren)
 		{
 			var chld = getChildren(data);
 			this.setItemsChecked(chld);
@@ -2235,7 +2240,7 @@ jQuery.fn.jColumnListView = function (options) {
 		emptyChildrenCounter:  false,
 		childIndicator:           true,
 		childIndicatorTextFormat: null,
-		selectAllChildren:        false,
+		checkAllChildren:        false,
 		ajaxSource: {
 			url:           null,
 			itemUrl:       null,

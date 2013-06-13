@@ -60,7 +60,7 @@
  *   ajaxSource/itemUrl       - URL to retrieve data when item was clicked
  *   ajaxSource/pathSeparator - separator to join item path indexes to string
  *
- * Parameters v0.5.3
+ * Parameters v0.5.6
  *   checkAllChildren  - when true checks all children of current checked item
  *
  *

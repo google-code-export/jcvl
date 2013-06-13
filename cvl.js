@@ -1663,7 +1663,7 @@ jCVL_ColumnList.prototype.setData = function (data) {
 }
 
 jCVL_ColumnList.prototype.getData = function () {
-	return this.data;
+	return this.getColumn(0).data;
 }
 
 // Checks all items in path to root or remove checks at all children
@@ -1733,7 +1733,7 @@ jCVL_ColumnList.prototype._updateWidth = function (w) {
 // Search for data item by path
 jCVL_ColumnList.prototype._getDataItemByPath = function (path) {
 	var p;
-	var d = this.data; 
+	var d = this.getData(); 
 	while (p = path.shift())
 	{
 		for (var i=0; i<d.length; i++)
@@ -1837,6 +1837,7 @@ function jCVL_ColumnListView(opts)
 		emptyChildrenCounter:     false,
 		childIndicator:           true,
 		childIndicatorTextFormat: null,
+		selectAllChildren:        false,
 		ajaxSource: {
 			url:           null,
 			itemUrl:       null,
@@ -2033,6 +2034,21 @@ jCVL_ColumnListView.prototype.onColumnItemClick = function (event, colIndex, ite
 // Updates labels depends on new selected items
 jCVL_ColumnListView.prototype.onColumnItemCheckboxClick = function (event, colIndex, itemIndex, item) {
 	var that = this;
+	var getChildren = function (pData, chld) {
+		if (!chld)
+			chld = [];
+		jQuery.each(pData, function (index, item) {
+			if (item.hasChildren)
+				getChildren(item.data, chld);
+			chld.push(item.value);
+		});
+		return chld;
+	};
+	// Find current item in data tree
+	var col       = item.getParentColumn();
+	var path      = col.getFullPath(itemIndex);
+	var data      = this.list._getDataItemByPath(path);
+
 	if (item.isChecked())
 	{
 		if (this.opts.singleCheck)
@@ -2057,26 +2073,18 @@ jCVL_ColumnListView.prototype.onColumnItemCheckboxClick = function (event, colIn
 			else
 				that.labels[item.value]++;
 		});
+
+		if (this.opts.selectAllChildren)
+		{
+			var chld = getChildren(data);
+			this.setItemsChecked(chld);
+		}
 	}
 	else
 	{
 		// Uncheck current and all checked children items if current item equal to selected
-		var rems = [];
-		
-		// Find current item in data tree
-		var col  = this.list.getColumn(colIndex);
-		var path = col.getFullPath(itemIndex);
-		var data = this.list._getDataItemByPath(path);
-		
 		// Collect all children items using data hash
-		var getChildren = function (pData, chld) {
-			jQuery.each(pData, function (index, item) {
-				if (item.hasChildren)
-					getChildren(item.data, chld);
-				chld.push(item.value);
-			});
-		};
-		getChildren(data, rems);
+		var rems = getChildren(data);
 		// Remove current item's label too
 		rems.push(item.getValue());
 		
@@ -2218,6 +2226,7 @@ jQuery.fn.jColumnListView = function (options) {
 		emptyChildrenCounter:  false,
 		childIndicator:           true,
 		childIndicatorTextFormat: null,
+		selectAllChildren:        false,
 		ajaxSource: {
 			url:           null,
 			itemUrl:       null,

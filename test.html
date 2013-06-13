@@ -30,13 +30,14 @@
 			columnMinWidth:   120,
 			columnMaxWidth:   200,
 			childIndicator:   true,
+			selectAllChildren: true,
 			leafMode: true,
-			onItemChecked: function (ci, ii, item) { console.log(ci, ii, item); },
-			onItemUnchecked: function (ci, ii, item) { console.log(ci, ii, item); }
+			onItemChecked: function (item) {  },
+			onItemUnchecked: function (item) {  }
 		});
 		jQuery.fn.jColumnListView({
 			id:           'cl2',
-			columnWidth:  120,
+			columnWidth:  180,
 			columnHeight: 180,
 			columnMargin: 5,
 			paramName:    'cview',
@@ -50,7 +51,7 @@
 			textFormat:            '%cvl-children-counter% %cvl-text%',
 			childrenCounterFormat: '[%cvl-count%]',
 			emptyChildrenCounter:  false,
-			childIndicator:           true
+			childIndicator:        true
 		});
 		
 		$('#t1-lmode').change(function () {

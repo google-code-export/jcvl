@@ -1605,9 +1605,9 @@ jCVL_ColumnList.prototype.onColumnItemClick = function (ev, colIndex, itemIndex,
 							}
 							ao.onSuccess(reqObj, respStatus, respData);
 						},
-						error:     function (reqObj, respStatis, respData) {
+						error:     function (reqObj, respStatus, respData) {
 							nextCol.hideWaiter();
-							ao.onFailure(reqObj, respStatus, errObj);
+							ao.onFailure(reqObj, respStatus, respData);
 						}
 					});
 				}

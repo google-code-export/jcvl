@@ -447,7 +447,7 @@ function jCVL_ColumnItem (opts)
 		.attr('class', this.cl.CBBox);
 	var cbElem = $('<input type="checkbox">')
 		.attr('class',   this.cl.CB)
-		.attr('checked', this.opts.checked)
+		.prop('checked', this.opts.checked)
 		.click(function(ev) { that.doOnCheckboxClick(ev); });
 	var labelElem = $('<span>')
 		.attr('class', this.cl.Label)
@@ -484,12 +484,12 @@ jCVL_ColumnItem.prototype.isChecked = function () {
 }
 
 jCVL_ColumnItem.prototype.setChecked = function (bCheck) {
-	this.elems.checkbox.attr('checked', !!bCheck);
+	this.elems.checkbox.prop('checked', !!bCheck);
 }
 
 // Toggle checkbox state
 jCVL_ColumnItem.prototype.toggle = function () {
-	this.elems.checkbox.attr('checked', !this.isChecked());
+	this.elems.checkbox.prop('checked', !this.isChecked());
 }
 
 // Returns text label of item
@@ -564,7 +564,7 @@ jCVL_ColumnItem.prototype.doOnClick = function (ev) {
 	if (this.opts.checkAndClick)
 	{
 		this.opts.checkAndClick = false; // silly but simple
-		$(this.elems.checkbox).attr('checked', ! $(this.elems.checkbox).attr('checked'));
+		$(this.elems.checkbox).prop('checked', ! $(this.elems.checkbox).prop('checked'));
 		this.doOnCheckboxClick(ev);
 		this.opts.checkAndClick = true;
 	}
